@@ -1,0 +1,318 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import plotly.express as px
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
+
+print('---------------------------------Read the Dataset---------------------------------------------------')
+# Read the dataset and convert it to csv
+df = pd.read_csv('/content/E_Commerce_Data_Set.txt')
+df.to_csv('/content/E_Commerce_Data_Set.csv')
+# Print first 20 rows
+print(df[0:20])
+
+print('---------------------------------Convert Data and Add Column Names---------------------------------------------------')
+
+# Read the dataset and convert it to csv
+df = pd.read_csv('/content/E_Commerce_Data_Set.txt', sep='\t', names=['Gender', 'Age', 'Annual_Income', 'Spending_Score'], skiprows=1)
+df.to_csv('/content/E_Commerce_Data_Set.csv')
+
+# Print first 20 rows
+print(df[0:20])
+
+print('---------------------------------Convert Male and Female into Binary, Detect Infinite Values and Replace Them---------------------------------------------------')
+
+#Preprocessing
+#Convert male and female into binary
+gender_mapping = {'Male': 1, 'Female': 0}
+df['Gender'] = df['Gender'].map(gender_mapping)
+
+#Detect the cells with infinite values
+inf_mask = np.isinf(df).any(axis=1)
+
+#Replace these cells with NaN
+df[inf_mask] = np.nan
+
+#Replace missing values with mean
+df.fillna(df.mean(numeric_only=True).round(1), inplace=True)
+
+# Print the updated dataframe
+print(df[0:20])
+
+print('---------------------------------The Value counts of the Males and Females---------------------------------------------------')
+
+#descriptive analaysis with graphs
+# Plot the Value counts of the Males and Females
+gender_counts = df['Gender'].value_counts()
+gender_labels = ['Male', 'Female']
+plt.bar(gender_labels, gender_counts)
+plt.title('Value counts of the Males and Females')
+plt.xlabel('Gender')
+plt.ylabel('Count')
+plt.show()
+
+print('---------------------------------Annual Income Analysis Separated by Males and Females---------------------------------------------------')
+
+#Annual Income Anlaysis Separated by Males and Females
+# Filter data for males and females
+male_data = df[df['Gender'] == 1]
+female_data = df[df['Gender'] == 0]
+# Plot the annual income for males and females side by side
+plt.figure(figsize=(10, 6))
+plt.subplot(1, 2, 1)
+plt.hist(male_data['Annual_Income'], bins=10, color='blue', alpha=0.7)
+plt.xlabel('Annual Income')
+plt.ylabel('Frequency')
+plt.title('Annual Income - Males')
+
+plt.subplot(1, 2, 2)
+plt.hist(female_data['Annual_Income'], bins=10, color='pink', alpha=0.7)
+plt.xlabel('Annual Income')
+plt.ylabel('Frequency')
+plt.title('Annual Income - Females')
+
+plt.tight_layout()
+plt.show()
+
+print('---------------------------------Spending Score Analysis Separated by Males and Females---------------------------------------------------')
+
+#Spending Score Anlaysis Separated by Males and Females
+# Plot the spending score for males and females side by side
+plt.figure(figsize=(10, 6))
+
+plt.subplot(1, 2, 1)
+plt.hist(male_data['Spending_Score'], bins=10, color='blue', alpha=0.7)
+plt.xlabel('Spending Score')
+plt.ylabel('Frequency')
+plt.title('Spending Score - Males')
+
+plt.subplot(1, 2, 2)
+plt.hist(female_data['Spending_Score'], bins=10, color='pink', alpha=0.7)
+plt.xlabel('Spending Score')
+plt.ylabel('Frequency')
+plt.title('Spending Score - Females')
+
+plt.tight_layout()
+plt.show()
+
+print('---------------------------------Annual Income Plotly Analysis on Whole Dataset---------------------------------------------------')
+
+#Analysis with plotly - Annual Income on whole dataset
+fig = px.histogram(df, x='Annual_Income')
+fig.show()
+
+print('---------------------------------Annual Income Analysis for Age Above and Below 30---------------------------------------------------')
+
+#Analysis of Annual Income for age above and below 30
+# Create separate dataframes for people below 30 and above 30
+df_below_30 = df[df['Age'] <= 30]
+df_above_30 = df[df['Age'] > 30]
+
+# Create a figure with two subplots
+fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+# Plot annual income distribution for people below 30
+axes[0].hist(df_below_30['Annual_Income'], bins=10, color='blue', alpha=0.5)
+axes[0].set_title('Annual Income - Age Below 30')
+axes[0].set_xlabel('Annual Income')
+axes[0].set_ylabel('Count')
+
+# Plot annual income distribution for people above 30
+axes[1].hist(df_above_30['Annual_Income'], bins=10, color='red', alpha=0.5)
+axes[1].set_title('Annual Income - Age Above 30')
+axes[1].set_xlabel('Annual Income')
+axes[1].set_ylabel('Count')
+
+# Adjust spacing between subplots
+plt.tight_layout()
+
+# Show the plots
+plt.show()
+
+print('---------------------------------Spending Score Analysis for Age Above and Below 30---------------------------------------------------')
+
+#Analysis of Spending score for age above and below 30
+# Create a figure with two subplots
+fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+
+# Plot spending score distribution for people below 30
+axes[0].hist(df_below_30['Spending_Score'], bins=10, color='blue', alpha=0.5, histtype='bar', edgecolor='black')
+axes[0].set_title('Spending Score - Age Below 30')
+axes[0].set_xlabel('Spending Score')
+axes[0].set_ylabel('Count')
+
+# Plot spending score distribution for people above 30
+axes[1].hist(df_above_30['Spending_Score'], bins=10, color='red', alpha=0.5, histtype='bar', edgecolor='black')
+axes[1].set_title('Spending Score - Age Above 30')
+axes[1].set_xlabel('Spending Score')
+axes[1].set_ylabel('Count')
+
+# Adjust spacing between subplots
+plt.tight_layout()
+
+# Show the plots
+plt.show()
+
+print('---------------------------------Correlation Matrix Analysis for Age, Annual Income and Spending Score---------------------------------------------------')
+
+#Correlation Matrix Analysis for Age, Annual Income and Spending Score
+# Compute correlation matrix
+corr_matrix = df[['Age', 'Annual_Income', 'Spending_Score']].corr()
+
+# Visualize correlation matrix as a heatmap
+plt.figure(figsize=(8, 6))
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', linewidths=0.5)
+plt.title('Correlation Matrix')
+plt.show()
+
+print('---------------------------------Summary Statistics of Whole Dataset---------------------------------------------------')
+
+#Summary statistics
+print(df.describe().round(1))
+
+print('---------------------------------Converting All Values to have only values up to 10 and Standardising the Data---------------------------------------------------')
+
+#Giving values of 1 to 10 to the dataset
+# Perform min-max scaling on multiple columns
+def min_max_scaling(df, columns):
+    for column in columns:
+        min_val = df[column].min()
+        max_val = df[column].max()
+        df[column] = (df[column] - min_val) / (max_val - min_val) * 9 + 1
+        df[column] = df[column].round(1)
+
+# Apply min-max scaling
+min_max_scaling(df, ['Age', 'Annual_Income', 'Spending_Score'])
+print(df[0:10])
+
+#standarsied the data
+sc = StandardScaler()
+scaled_df = sc.fit_transform(df)
+print(scaled_df)
+
+print('---------------------------------Elbow Method---------------------------------------------------')
+
+# Elbow Method
+wcss = []
+for k in range(1, 11):
+    km = KMeans(n_clusters=k, random_state=42)
+    km.fit(scaled_df)
+    wcss.append(km.inertia_)
+
+# Plot within-cluster sum of squares for different values of k
+plt.plot(range(1, 11), wcss, marker='o')
+plt.title('Elbow Method')
+plt.xlabel('Number of Clusters')
+plt.ylabel('Within-Cluster Sum of Squares')
+plt.show()
+
+print('---------------------------------Clustering 3d---------------------------------------------------')
+
+#Clustering
+k = 3
+km = KMeans(n_clusters=k, max_iter=300, n_init=10, random_state=42)
+y_km = km.fit_predict(scaled_df)
+
+#creating 3d plot with centroids
+def plot3D(x, y):
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    color = ['r', 'b','y']
+
+    for i in range(len(x)):
+        ax.scatter(x[i, 0], x[i, 1], x[i, 2], marker='o', c=color[int(y[i])])
+
+    #Imputing centroinds
+    k = len(np.unique(y))
+    kmeans = KMeans(n_clusters=k)
+    kmeans.fit(x)
+
+    # Get centroids
+    centroids = kmeans.cluster_centers_
+
+    # Plot centroids
+    for i in range(k):
+        ax.scatter(centroids[i, 0], centroids[i, 1], centroids[i, 2], marker='X', color='k', s=100)
+
+    ax.set_xlabel('Age')
+    ax.set_ylabel('Annual Income')
+    ax.set_zlabel('Spending Score')
+    ax.view_init(elev=35, azim=20)
+
+    # Add legend
+    legend_labels = [f'Cluster {i+1}' for i in range(k)]
+    legend_handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=color[i], markersize=8) for i in range(k)]
+    ax.legend(legend_handles, legend_labels)
+
+    plt.show()
+
+plot3D(scaled_df, y_km)
+
+print('---------------------------------Clustering 2d---------------------------------------------------')
+
+#Reducing dimension for 2d clustering
+
+def plot2D(x, y):
+    # Using PCA to reduce dimensions
+    pca = PCA(n_components=2)
+    x_pca = pca.fit_transform(x)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    color = ['r', 'b', 'y']
+
+    for i in range(len(x_pca)):
+        ax.scatter(x_pca[i, 0], x_pca[i, 1], marker='o', c=color[int(y[i])])
+
+    #Imputing centroinds
+    k = len(np.unique(y))
+    kmeans = KMeans(n_clusters=k)
+    kmeans.fit(x)
+
+    # Transform centroids to PCA space
+    centroids_pca = pca.transform(kmeans.cluster_centers_)
+
+    # Plot centroids
+    for i in range(k):
+        ax.plot(centroids_pca[i, 0], centroids_pca[i, 1], 'kX', markersize=10)
+
+    ax.set_xlabel('Age-Income Component')
+    ax.set_ylabel('Spending Component')
+
+    # Add legend
+    legend_labels = [f'Cluster {i+1}' for i in range(k)]
+    legend_handles = [plt.Line2D([0], [0], marker='o', color='w', markerfacecolor=color[i], markersize=8) for i in range(k)]
+    ax.legend(legend_handles, legend_labels)
+
+    plt.show()
+
+plot2D(scaled_df, y_km)
+
+print('---------------------------------Silhouette Score---------------------------------------------------')
+
+# Calculate the silhouette score
+silhouette_avg = silhouette_score(scaled_df, y_km)
+
+# Print the silhouette score
+print("Silhouette Score:", silhouette_avg)
+
+print('---------------------------------Clustering Analysis- Disortion for a Range of Number of Cluster---------------------------------------------------')
+
+#CLustering Analysis
+#Calculate disortion for a range of number of cluster
+distortions = []
+for i in range (1,200,10):
+  km = KMeans(n_clusters=i)
+
+  km.fit(scaled_df)
+  distortions.append(km.inertia_)
+
+#plot
+plt.plot(range(1,200,10), distortions, marker='o')
+plt.xlabel('NUmber of clusters')
+plt.ylabel('Disortion')
+plt.show()
